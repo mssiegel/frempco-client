@@ -50,6 +50,7 @@ export const sampleClassroomName = classrooms[0].classroomName;
 
 export interface ClassroomProps {
   classroomName: string;
+  student: string;
 }
 
 export interface Student {

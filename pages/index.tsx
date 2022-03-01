@@ -50,31 +50,14 @@ export default function Home() {
   const router = useRouter();
   const apiUrl = `${process.env.NEXT_PUBLIC_SERVER_URL}/api/v1`;
   const socket = useContext(SocketContext);
-  const [openStudentModal, setOpenStudentModal] = useState(false);
+
   const [openTeacherModal, setOpenTeacherModal] = useState(false);
-  const handleCloseStudentModal = () => setOpenStudentModal(false);
   const handleCloseTeacherModal = () => setOpenTeacherModal(false);
-  const classStudentInput = useRef<HTMLInputElement>(null);
-  const studentNameInput = useRef<HTMLInputElement>(null);
   const classTeacherInput = useRef<HTMLInputElement>(null);
   const passTeacherInput = useRef<HTMLInputElement>(null);
 
   async function visitStudentsPage() {
-    const classroom = classStudentInput.current.value;
-    const classroomObj = getClassroom(classroom);
-    if (!classroomObj) return window.alert(`Invalid classroom: ${classroom}`);
-    const getResponse = await fetch(`${apiUrl}/classrooms/${classroom}`);
-    const { isActive } = await getResponse.json();
-    if (!isActive)
-      return window.alert(
-        `Classroom not activated: ${classroom}\n Please wait for your teacher to activate your classroom and try again.`,
-      );
-    const student = studentNameInput.current.value;
-    if (student?.trim()) {
-      socket.emit('new student entered', { classroom, student });
-      // TODO: GET STUDENTS NAME TO SHOW ON STUDENT PAGE
-      router.push(`/student/classroom/${classroom}`);
-    }
+    router.push(`/student/classroom/setupClassroom`);
   }
 
   function visitTeachersPage() {
@@ -119,7 +102,7 @@ export default function Home() {
                 variant='contained'
                 size='large'
                 startIcon={<LightbulbIcon />}
-                onClick={() => setOpenStudentModal(true)}
+                onClick={visitStudentsPage}
               >
                 Students page
               </Button>
@@ -144,24 +127,6 @@ export default function Home() {
             </Box>
           </Grid>
         </Grid>
-
-        <BasicModal
-          open={openStudentModal}
-          handleClose={handleCloseStudentModal}
-        >
-          <Typography variant='h5'>Hello student</Typography>
-
-          <ModalTextField
-            label='Classroom'
-            refObject={classStudentInput}
-            autoFocus={true}
-          />
-          <ModalTextField label='Your Name' refObject={studentNameInput} />
-
-          <Button variant='contained' size='large' onClick={visitStudentsPage}>
-            Visit Student&apos;s Room
-          </Button>
-        </BasicModal>
 
         <BasicModal
           open={openTeacherModal}
