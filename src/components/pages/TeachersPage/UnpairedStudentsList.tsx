@@ -69,7 +69,7 @@ export default function UnpairedStudentsList({ socket }) {
         socket.off('student left');
       }
     };
-  });
+  }, [socket]);
 
   function pairStudents() {
     if (unpairedStudents.length < 2)

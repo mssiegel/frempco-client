@@ -53,7 +53,7 @@ export default function StudentsPage({ classroomName }: ClassroomProps) {
         router.events.off('routeChangeStart', handleRouteChange);
       }
     };
-  });
+  }, [socket]);
 
   return (
     <main>

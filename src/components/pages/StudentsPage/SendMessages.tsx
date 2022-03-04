@@ -41,7 +41,7 @@ export default function SendMessages({ socket, chat, setChat }) {
         socket.off('peer is typing');
       }
     };
-  });
+  }, [socket]);
 
   function sendMessage(e) {
     e.preventDefault();
