@@ -79,7 +79,6 @@ export default function TeachersPage({ classroomName }: ClassroomProps) {
             convo.push([student, character, message]);
             chat.conversation = convo;
             chats[chatIndex] = chat;
-            console.log(chats, convo);
             return chats;
           });
         },
