@@ -49,23 +49,16 @@ export default function TeachersPage({ classroomName }: ClassroomProps) {
     router.events.on('routeChangeStart', handleRouteChange);
 
     if (socket) {
-      let _chats = [];
-      const _setStudentChats = (f) => {
-        if (typeof f === 'function') _chats = [...f(_chats)];
-        if (Array.isArray(f)) _chats = [...f];
-        setStudentChats(_chats);
-      };
-
       socket.on('chat started - two students', ({ chatId, studentPair }) => {
         if (studentChats.length === 0) setDisplayedChat(chatId);
-        _setStudentChats((chats) => [
+        setStudentChats((chats) => [
           ...chats,
           { chatId, studentPair, conversation: [], startTime: currentTime() },
         ]);
       });
 
       socket.on('chat ended - two students', ({ chatId }) => {
-        _setStudentChats((chats) =>
+        setStudentChats((chats) =>
           chats.filter((chat) => chat.chatId !== chatId),
         );
       });
@@ -73,17 +66,22 @@ export default function TeachersPage({ classroomName }: ClassroomProps) {
       socket.on(
         'student chat message',
         ({ character, message, socketId, chatId }) => {
-          const chats = [..._chats];
-          const chat = chats.find((chat) => chat.chatId === chatId);
-          if (!chat) return;
-
-          const student =
-            chat.studentPair[0].socketId === socketId ? 'student1' : 'student2';
-          chat.conversation = [
-            ...chat.conversation,
-            [student, character, message],
-          ];
-          _setStudentChats(chats);
+          setStudentChats((student_chats) => {
+            const chats = [...student_chats];
+            const chatIndex = chats.findIndex((chat) => chat.chatId === chatId);
+            if (chatIndex < 0) return student_chats;
+            const chat = { ...chats[chatIndex] };
+            const convo = [...chat.conversation];
+            const student =
+              chat.studentPair[0].socketId === socketId
+                ? 'student1'
+                : 'student2';
+            convo.push([student, character, message]);
+            chat.conversation = convo;
+            chats[chatIndex] = chat;
+            console.log(chats, convo);
+            return chats;
+          });
         },
       );
     }
