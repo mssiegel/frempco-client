@@ -4,13 +4,17 @@ import {
   Lightbulb as LightbulbIcon,
 } from '@mui/icons-material';
 import Head from 'next/head';
-import { useContext, useState, useRef, useCallback } from 'react';
+import { useContext, useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { throttle } from 'lodash-es';
 
 import Link from '@components/shared/Link';
 import Layout from '@components/shared/Layout';
-import { getClassroom, sampleClassroomName } from '@utils/classrooms';
+import {
+  getClassroom,
+  getUniqueID,
+  sampleClassroomName,
+} from '@utils/classrooms';
 import { SocketContext } from '@contexts/SocketContext';
 import { UserContext } from '@contexts/UserContext';
 import Chatbox from '@components/pages/TeachersPage/Chatbox';
@@ -62,6 +66,23 @@ export default function Home() {
   const classTeacherInput = useRef<HTMLInputElement>(null);
   const passTeacherInput = useRef<HTMLInputElement>(null);
 
+  // we are checking to see if this is a student who is
+  // already logged in, if they are take them to their chat.
+  useEffect(() => {
+    async function checkStudent() {
+      const isStudentAlreadyActive = await fetch(
+        `${apiUrl}/student/${getUniqueID()}`,
+      );
+      const { isActive, student, classroom } =
+        await isStudentAlreadyActive.json();
+      if (isActive) {
+        visitStudentsPageHelper(classroom, student);
+      }
+    }
+    checkStudent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function visitStudentsPage() {
     const classroom = classStudentInput.current.value?.trim();
     const student = studentNameInput.current.value?.trim();
@@ -86,7 +107,6 @@ export default function Home() {
         `Classroom not activated: ${classroom}\n Please wait for your teacher to activate your classroom and try again.`,
       );
     if (student) {
-      socket.emit('new student entered', { classroom, student });
       setUser({ name: student });
       router.push(`/student/classroom/${classroom}`);
     }

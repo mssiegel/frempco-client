@@ -15,6 +15,7 @@ export default function StudentsPage({ classroomName }: ClassroomProps) {
   console.log('Student socketId:', socket?.id ?? 'No socket found');
 
   const [chatInSession, setChatInSession] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   const [removedFromClass, setRemovedFromClass] = useState(false);
   const [chat, setChat] = useState({
     you: '',
@@ -36,31 +37,54 @@ export default function StudentsPage({ classroomName }: ClassroomProps) {
     router.events.on('routeChangeStart', handleRouteChange);
 
     if (socket) {
-      socket.on('chat start', ({ yourCharacter, peersCharacter }) => {
+      socket.on('disconnect', () => {
+        setReconnecting(true);
+        setChatInSession(false);
+      });
+
+      socket.on('connect', () => {
+        setReconnecting(false);
+      });
+
+      socket.on('chat start', ({ yourCharacter, peersCharacter, messages }) => {
+        // reconstruct stored messages from the server if any
+        const convo = messages
+          ? messages.map((msg) => {
+              const { character, message } = msg;
+              if (character === yourCharacter)
+                return ['you', character, message];
+              return ['peer', character, message];
+            })
+          : [];
         setChat({
           you: yourCharacter,
           peer: peersCharacter,
           initialChar: yourCharacter,
-          conversation: [],
+          conversation: convo,
           startTime: currentTime(),
         });
         setChatInSession(true);
+        setReconnecting(false);
       });
 
       socket.on('remove student from classroom', () => {
         setRemovedFromClass(true);
         setChatInSession(false);
       });
+
+      socket.emit('new student entered', { realName: name, classroomName });
     }
 
     return () => {
       if (socket) {
+        socket.off('disconnect');
+        socket.off('connect');
         socket.off('chat start');
         socket.off('remove student from classroom');
         router.events.off('routeChangeStart', handleRouteChange);
       }
     };
-  }, [router.events, socket]);
+  }, [classroomName, name, router.events, socket, reconnecting]);
 
   return (
     <main>
@@ -69,6 +93,13 @@ export default function StudentsPage({ classroomName }: ClassroomProps) {
           ? 'Your teacher has removed you from the classroom'
           : `Hello ${name}! Welcome to your classroom: ${classroomName}`}
       </Typography>
+
+      {reconnecting && (
+        <Typography variant='h5' sx={{ color: 'white', mb: 4 }}>
+          Reconnecting... Please wait
+        </Typography>
+      )}
+
       {chatInSession && (
         <Box sx={{ display: 'flex', justifyContent: 'center' }}>
           <Chatbox socket={socket} chat={chat} setChat={setChat} />
